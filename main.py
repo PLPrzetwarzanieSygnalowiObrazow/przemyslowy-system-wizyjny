@@ -11,6 +11,7 @@ import copy
 from dependencies.video import Video
 from dependencies.filter import Filter
 from dependencies.blobDetector import BlobDetector
+from dependencies.draw import Draw
 
 VIDEO_FILE_PATH = "./assets/conveyor-jewelry.mp4"
 
@@ -26,9 +27,9 @@ def main():
         filtered_frame = Filter.gauss(frame)
         filtered_frame = Filter.canny(filtered_frame)
 
-        #filtered_frame = Filter.clear_border(filtered_frame, 1)
+        # filtered_frame = Filter.clear_border(filtered_frame, 1)
         filtered_frame = Filter.closing(filtered_frame, 3)
-        
+
         closing_mask = np.ones((12, 12), np.uint8)
         filtered_frame = cv2.morphologyEx(
             src=filtered_frame,
@@ -46,26 +47,27 @@ def main():
             mode=cv2.RETR_CCOMP,
             method=cv2.CHAIN_APPROX_SIMPLE
         )
-        for i, contour in enumerate(contours):
-            color = (0, 255, 0)
-
-            # wypelnianie konturu w odpowiednim kolorze
-            cv2.drawContours(result, [contour], -1, color, -1)
+        
+        result = Draw.contourFill(result,contours, Draw.COLOR_GREEN)
         # filtered_frame = Filter.remove_small_objects(filtered_frame, 250)
 
         keyPoints = bd.detect_objects(result)
 
         video.show_frame(
-            cv2.drawKeypoints(
-                image=result,
-                keypoints=keyPoints,
-                outImage=np.array([]),
-                color=(0, 0, 255),
-                flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS
+            Draw.keyPoints(
+                result,
+                keyPoints,
+                Draw.COLOR_RED
             )
         )
-        
-        video.show_frame(result)
+
+        # video.show_frame(
+        #     Draw.rectangle(
+        #         result,
+        #         [[(0,0),(300,300)],[(400,400),(600,600)]],
+        #         Draw.COLOR_RED
+        #     )
+        # )
 
 
 if __name__ == "__main__":
