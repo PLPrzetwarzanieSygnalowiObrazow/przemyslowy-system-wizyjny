@@ -10,9 +10,9 @@ class Filter:
 
     GAUSS_SIGMA_X: Final[int] = 0
     GAUSS_SIGMA_Y: Final[int] = 0
-    GAUSS_K_SIZE: Final[float] = (1, 1)
+    GAUSS_K_SIZE: Final[float] = (5, 5)
 
-    CANNY_THR_1: Final[int] = 120
+    CANNY_THR_1: Final[int] = 60
     CANNY_THR_2: Final[int] = 255
 
     @staticmethod

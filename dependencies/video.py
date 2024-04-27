@@ -20,7 +20,7 @@ class Video:
     width: int = field(default=640)
     height: int = field(default=480)
 
-    frame_no: int = field(default=0, init=False)
+    frame_no: int = field(default=0, init=True)
     frame_flag: bool = field(default=True, init=False)
     capture: cv2.VideoCapture = field(default=None, init=False)
     current_frame: numpy.ndarray = field(default=None, init=False)
@@ -52,6 +52,7 @@ class Video:
                 # Set video resolution
                 self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
                 self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
+                self.capture.set(cv2.CAP_PROP_POS_FRAMES, self.frame_no)
                 break
         
         # execute if loop was not exited with break
@@ -60,7 +61,9 @@ class Video:
             raise Exception("Could not open video file")
 
     def pause(self, delay_counter: int = 1) -> None:
-        cv2.waitKey(pow(self.DELAY_BETWEEN_FRAMES, delay_counter))
+        if cv2.waitKey(pow(self.DELAY_BETWEEN_FRAMES, delay_counter)) == 27:
+            cv2.destroyAllWindows()
+            self.capture.release()
 
     def get_frame(self) -> numpy.ndarray:
         

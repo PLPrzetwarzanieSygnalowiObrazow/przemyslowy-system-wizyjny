@@ -17,7 +17,7 @@ VIDEO_FILE_PATH = "./assets/nagranie_v4_cut.mp4"
 
 
 def main():
-    video = Video(path=VIDEO_FILE_PATH)
+    video = Video(path=VIDEO_FILE_PATH, frame_no=550)
 
     bd = BlobDetector()
 
@@ -31,17 +31,16 @@ def main():
         # usunięcie artefaktów na brzegach obrazu
         cleared_edges = segmentation.clear_border(
             labels=filtered_frame,
-            buffer_size=1
+            buffer_size=0
         )
         
         # filtr morfologiczny
-        closing_mask = np.ones((10, 10), np.uint8)
+        closing_mask = np.ones((4, 4), np.uint8)
         closed_edges = cv2.morphologyEx(
             src=cleared_edges,
             op=cv2.MORPH_CLOSE,
             kernel=closing_mask
         )
-        video.show_frame(filtered_frame)
         contours, hierarchy = cv2.findContours(
             image=closed_edges,
             mode=cv2.RETR_CCOMP,
