@@ -8,9 +8,9 @@ import cv2
 import time
 import copy
 
-from dependencies.video.video import Video
-from dependencies.filter.filter import Filter
-from dependencies.blobDetector.blobDetector import BlobDetector
+from dependencies.video import Video
+from dependencies.filter import Filter
+from dependencies.blobDetector import BlobDetector
 
 VIDEO_FILE_PATH = "./assets/conveyor-jewelry.mp4"
 
