@@ -13,7 +13,7 @@ from dependencies.filter import Filter
 from dependencies.blobDetector import BlobDetector
 from dependencies.draw import Draw
 
-VIDEO_FILE_PATH = "./assets/nagranie_v4.mp4"
+VIDEO_FILE_PATH = "./assets/nagranie_v4_cut.mp4"
 
 
 def main():
