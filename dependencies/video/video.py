@@ -11,7 +11,7 @@ class Video:
     MSG_VIDEO_ENDED: Final[str] = "Video ended"
 
     DELAY_FOR_OPEN_FILE: Final[int] = 2000
-    DELAY_BETWEEN_FRAMES: Final[int] = 10
+    DELAY_BETWEEN_FRAMES: Final[int] = 1
     RETRY_LIMIT_GET_FRAME: Final[int] = 3
     RETRY_LIMIT_OPEN: Final[int] = 3
 
@@ -80,6 +80,14 @@ class Video:
         else:
             print(self.MSG_VIDEO_ENDED)
             return None
+        
+        return self.current_frame
+    
+    def get_gray_frame(self) -> numpy.ndarray:
+        self.current_frame = cv2.cvtColor(
+            self.get_frame(),
+            cv2.COLOR_BGR2GRAY
+        )
         
         return self.current_frame
 
