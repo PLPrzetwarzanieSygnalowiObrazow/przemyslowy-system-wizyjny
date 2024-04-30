@@ -66,7 +66,7 @@ class Draw:
         return frame
 
     @staticmethod
-    def contourFill(frame: numpy.ndarray, contours: list[tuple], color: tuple[int, int, int]):
+    def contourFill(frame: numpy.ndarray, contours: list[tuple], color: tuple[int, int, int] = (0, 0, 0)):
         for i, contour in enumerate(contours):
             cv2.drawContours(
                 image=frame,
@@ -77,7 +77,7 @@ class Draw:
             )
 
         return frame
-    
+
     @staticmethod
     def contour(frame: numpy.ndarray, contours: list[tuple], color: tuple[int, int, int]):
         cv2.drawContours(

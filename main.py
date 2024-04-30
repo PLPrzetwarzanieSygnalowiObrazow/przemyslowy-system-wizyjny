@@ -13,23 +13,24 @@ from dependencies.video import Video
 from dependencies.filter import Filter
 from dependencies.blobDetector import BlobDetector
 from dependencies.draw import Draw
+from dependencies.segmentation import Segmentation
 
 VIDEO_FILE_PATH = "./assets/nagranie_v4_cut.mp4"
 EARINGS_DETECTOR = BlobDetector(
     filter_by_color=True,
     blob_color=0,
     filter_by_area=True,
-    min_area=100,
-    max_area=8000,
+    min_area=1200,
+    max_area=10900,
     filter_by_circularity=True,
-    min_circularity=0.3,
-    max_circularity=0.8,
-    filter_by_convexity=True,
-    min_convexity=0.01,
-    max_convexity=0.8,
+    min_circularity=0.35,
+    max_circularity=0.80,
+    filter_by_convexity=False,
+    min_convexity=0.20,
+    max_convexity=0.90,
     filter_by_inertia=True,
-    min_inertia_ratio=0.01,
-    max_inertia_ratio=0.8,
+    min_inertia_ratio=0.12,
+    max_inertia_ratio=0.90,
 )
 RINGS_DETECTOR = BlobDetector(
     filter_by_color=True,
@@ -51,14 +52,14 @@ NECKLES_DETECTOR = BlobDetector(
     filter_by_color=True,
     blob_color=0,
     filter_by_area=True,
-    min_area=60000,
-    max_area=300000,
-    filter_by_circularity=False,
-    min_circularity=0.3,
-    max_circularity=1,
+    min_area=100000,
+    max_area=10000000,
+    filter_by_circularity=True,
+    min_circularity=0.25,
+    max_circularity=0.9,
     filter_by_convexity=False,
     min_convexity=0.1,
-    max_convexity=0.5,
+    max_convexity=1.0,
     filter_by_inertia=False,
     min_inertia_ratio=0.4,
     max_inertia_ratio=1,
@@ -66,7 +67,7 @@ NECKLES_DETECTOR = BlobDetector(
 
 
 def main():
-    video = Video(path=VIDEO_FILE_PATH, frame_no=550)
+    video = Video(path=VIDEO_FILE_PATH, frame_no=500)
 
     while not video.is_ended():
         # Pobranie pojedynczej klatki
@@ -85,16 +86,24 @@ def main():
 
         # Domknięcie krawędzi
         closed_frame = Filter.closing(canny_frame, 2)
+
+        # Znalezienie krawędzi
+        contours = Segmentation.findContours(closed_frame)
+
+        # Wypełnienie znalezionych krawędzi
+        contours_filled = Draw.contourFill(gray_frame, contours)
+
+        # Zamknięcie krawędzi (tylko do pierścionków)
         closed_frame = Filter.closing(canny_frame, 4)
 
         # Znalezienie pierścionków
         rings_key_points = RINGS_DETECTOR.detect_objects(closed_frame)
 
         # Znalezienie kolczyków
-        earings_key_points = EARINGS_DETECTOR.detect_objects(closed_frame)
+        earings_key_points = EARINGS_DETECTOR.detect_objects(contours_filled)
 
         # Znalezienie naszyjników
-        neckles_key_points = NECKLES_DETECTOR.detect_objects(closed_frame)
+        neckles_key_points = NECKLES_DETECTOR.detect_objects(contours_filled)
 
         # Połączenie obrazu głównego z punktami
         # Wyszukiwanie pierścieni działa najlepiej
