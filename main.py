@@ -15,127 +15,95 @@ from dependencies.blobDetector import BlobDetector
 from dependencies.draw import Draw
 
 VIDEO_FILE_PATH = "./assets/nagranie_v4_cut.mp4"
+EARINGS_DETECTOR = BlobDetector(
+    filter_by_color=True,
+    blob_color=0,
+    filter_by_area=True,
+    min_area=100,
+    max_area=8000,
+    filter_by_circularity=True,
+    min_circularity=0.3,
+    max_circularity=0.8,
+    filter_by_convexity=True,
+    min_convexity=0.01,
+    max_convexity=0.8,
+    filter_by_inertia=True,
+    min_inertia_ratio=0.01,
+    max_inertia_ratio=0.8,
+)
+RINGS_DETECTOR = BlobDetector(
+    filter_by_color=True,
+    blob_color=0,
+    filter_by_area=True,
+    min_area=7000,
+    max_area=12000,
+    filter_by_circularity=True,
+    min_circularity=0.6,
+    max_circularity=1,
+    filter_by_convexity=True,
+    min_convexity=0.6,
+    max_convexity=1,
+    filter_by_inertia=True,
+    min_inertia_ratio=0.5,
+    max_inertia_ratio=1,
+)
+NECKLES_DETECTOR = BlobDetector(
+    filter_by_color=True,
+    blob_color=0,
+    filter_by_area=True,
+    min_area=60000,
+    max_area=300000,
+    filter_by_circularity=False,
+    min_circularity=0.3,
+    max_circularity=1,
+    filter_by_convexity=False,
+    min_convexity=0.1,
+    max_convexity=0.5,
+    filter_by_inertia=False,
+    min_inertia_ratio=0.4,
+    max_inertia_ratio=1,
+)
 
 
-def mainContours():
+def main():
     video = Video(path=VIDEO_FILE_PATH, frame_no=550)
 
-    bd = BlobDetector()
-
     while not video.is_ended():
+        # Pobranie pojedynczej klatki
         org_frame = video.get_frame()
-        frame = cv2.cvtColor(org_frame, cv2.COLOR_BGR2GRAY)
-        filtered_frame = Filter.gauss(frame)
+        if org_frame is None:
+            break
 
-        filtered_frame = Filter.canny(filtered_frame)
+        # Zamiana klatki na odcienie szarości
+        gray_frame = cv2.cvtColor(org_frame, cv2.COLOR_BGR2GRAY)
 
-        # usunięcie artefaktów na brzegach obrazu
-        cleared_edges = segmentation.clear_border(
-            labels=filtered_frame,
-            buffer_size=0
-        )
+        # Rozmazanie klatki
+        gaussian_frame = Filter.gauss(gray_frame)
 
-        # filtr morfologiczny
-        closing_mask = np.ones((4, 4), np.uint8)
-        closed_edges = cv2.morphologyEx(
-            src=cleared_edges,
-            op=cv2.MORPH_CLOSE,
-            kernel=closing_mask
-        )
-        contours, hierarchy = cv2.findContours(
-            image=closed_edges,
-            mode=cv2.RETR_CCOMP,
-            method=cv2.CHAIN_APPROX_SIMPLE
-        )
-        result = np.zeros_like(org_frame)
-        red_color = (0, 0, 255)
-        result[:] = red_color
+        # Wykrywanie krawędzi
+        canny_frame = Filter.canny(gaussian_frame)
 
-        video.show_frame(
-            Draw.contourFill(
-                result,
-                contours,
-                Draw.COLOR_GREEN
-            )
-        )
+        # Domknięcie krawędzi
+        closed_frame = Filter.closing(canny_frame, 2)
+        closed_frame = Filter.closing(canny_frame, 4)
 
+        # Znalezienie pierścionków
+        rings_key_points = RINGS_DETECTOR.detect_objects(closed_frame)
 
-def mainThresholds():
-    video = Video(path=VIDEO_FILE_PATH, frame_no=550)
+        # Znalezienie kolczyków
+        earings_key_points = EARINGS_DETECTOR.detect_objects(closed_frame)
 
-    bd_earings = BlobDetector(
-        filter_by_area=True,
-        min_area=1000,
-        max_area=10800,
-        filter_by_circularity=True,
-        min_circularity=0.3,
-        max_circularity=0.5,
-        filter_by_convexity=True,
-        min_convexity=0.86,
-        max_convexity=0.9,
-        filter_by_inertia=True,
-        min_inertia_ratio=0.1,
-        max_inertia_ratio=0.9
-    )
+        # Znalezienie naszyjników
+        neckles_key_points = NECKLES_DETECTOR.detect_objects(closed_frame)
 
-    while not video.is_ended():
-        org_frame = video.get_frame()
-        frame = cv2.cvtColor(org_frame, cv2.COLOR_BGR2GRAY)
-        thr = filters.threshold_minimum(frame)
+        # Połączenie obrazu głównego z punktami
+        # Wyszukiwanie pierścieni działa najlepiej
+        result = Draw.keyPoints(org_frame, rings_key_points, Draw.COLOR_RED)
+        result = Draw.keyPoints(result, earings_key_points, Draw.COLOR_GREEN)
+        result = Draw.keyPoints(result, neckles_key_points, Draw.COLOR_BLUE)
 
-        thresh_for_frame = (frame >= thr)
-
-        # fr = ndi.binary_fill_holes(thresh_for_frame)
-        # brain_l, lb_num = measure.label(fr, return_num=True)
-        # num_of_regions = np.max(brain_l)
-        # regionProps = measure.regionprops(brain_l)
-        # areas = [prop.area for prop in regionProps]
-        # max_index = np.argmax(areas)
-        # seg_brain = (brain_l==regionProps[max_index].label)
-        # brain_size = int(areas[max_index])
-
-        frame_converted = np.uint8(thresh_for_frame) * 255
-        filtered_frame = cv2.GaussianBlur(
-            src=frame_converted,
-            ksize=(1, 1),
-            sigmaX=0,
-            sigmaY=0
-        )
-
-        filtered_frame = cv2.Canny(
-            image=filtered_frame,
-            threshold1=0,
-            threshold2=255
-        )
-
-        closing_mask = np.ones((5, 1), np.uint8)
-        closed_edges = cv2.morphologyEx(
-            src=filtered_frame,
-            op=cv2.MORPH_CLOSE,
-            kernel=closing_mask
-        )
-        contours, hierarchy = cv2.findContours(
-            image=closed_edges,
-            mode=cv2.RETR_CCOMP,
-            method=cv2.CHAIN_APPROX_SIMPLE
-        )
-        keyPoints = bd_earings.detect_objects(Draw.contourFill(
-                frame,
-                contours,
-                Draw.COLOR_GREEN
-            ))
-
-        # video.show_frame(
-        #     filtered_frame
-        # )
-        video.show_frame(
-            Draw.keyPoints(
-                frame,
-                keyPoints,
-                Draw.COLOR_GREEN
-            )
-        )
+        video.show_frame(result)
 
 
 if __name__ == "__main__":
-    mainThresholds()
+    main()
