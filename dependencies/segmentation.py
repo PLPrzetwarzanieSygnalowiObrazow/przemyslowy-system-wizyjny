@@ -20,7 +20,7 @@ class Segmentation:
         )
 
     @staticmethod
-    def findContours(frame: numpy.ndarray, mode: int = cv2.RETR_CCOMP, method: int = cv2.CHAIN_APPROX_SIMPLE):
+    def findContours(frame: numpy.ndarray, mode: int = cv2.RETR_LIST, method: int = cv2.CHAIN_APPROX_SIMPLE):
         return (
             cv2.findContours(
                 image=frame,
