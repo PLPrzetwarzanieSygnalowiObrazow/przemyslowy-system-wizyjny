@@ -12,62 +12,100 @@ from dependencies.video import Video
 from dependencies.filter import Filter
 from dependencies.blobDetector import BlobDetector
 from dependencies.draw import Draw
+from dependencies.segmentation import Segmentation
 
-VIDEO_FILE_PATH = "./assets/conveyor-jewelry.mp4"
+VIDEO_FILE_PATH = "./assets/nagranie_v4_cut.mp4"
+EARINGS_DETECTOR = BlobDetector(
+    filter_by_color=True,
+    blob_color=0,
+    filter_by_area=True,
+    min_area=1200,
+    max_area=10900,
+    filter_by_circularity=True,
+    min_circularity=0.35,
+    max_circularity=0.80,
+    filter_by_convexity=False,
+    min_convexity=0.20,
+    max_convexity=0.90,
+    filter_by_inertia=True,
+    min_inertia_ratio=0.12,
+    max_inertia_ratio=0.90,
+)
+RINGS_DETECTOR = BlobDetector(
+    filter_by_color=True,
+    blob_color=0,
+    filter_by_area=True,
+    min_area=7000,
+    max_area=12000,
+    filter_by_circularity=True,
+    min_circularity=0.6,
+    max_circularity=1,
+    filter_by_convexity=True,
+    min_convexity=0.6,
+    max_convexity=1,
+    filter_by_inertia=True,
+    min_inertia_ratio=0.5,
+    max_inertia_ratio=1,
+)
+NECKLES_DETECTOR = BlobDetector(
+    filter_by_color=True,
+    blob_color=0,
+    filter_by_area=True,
+    min_area=100000,
+    max_area=10000000,
+    filter_by_circularity=True,
+    min_circularity=0.25,
+    max_circularity=0.9,
+    filter_by_convexity=False,
+    min_convexity=0.1,
+    max_convexity=1.0,
+    filter_by_inertia=False,
+    min_inertia_ratio=0.4,
+    max_inertia_ratio=1,
+)
 
 
 def main():
-    video = Video(path=VIDEO_FILE_PATH)
+    video = Video(path=VIDEO_FILE_PATH, frame_no=1000)
 
-    bd = BlobDetector()
+    while (org_frame := video.get_frame()) is not None:
+        # Zamiana klatki na odcienie szarości
+        gray_frame = cv2.cvtColor(org_frame, cv2.COLOR_BGR2GRAY)
 
-    while not video.is_ended():
-        org_frame = video.get_frame()
-        frame = cv2.cvtColor(org_frame, cv2.COLOR_BGR2GRAY)
-        filtered_frame = Filter.gauss(frame)
-        filtered_frame = Filter.canny(filtered_frame)
+        # Rozmazanie klatki
+        gaussian_frame = Filter.gauss(gray_frame)
 
-        # filtered_frame = Filter.clear_border(filtered_frame, 1)
-        filtered_frame = Filter.closing(filtered_frame, 3)
+        # Wykrywanie krawędzi
+        canny_frame = Filter.canny(gaussian_frame)
 
-        closing_mask = np.ones((12, 12), np.uint8)
-        filtered_frame = cv2.morphologyEx(
-            src=filtered_frame,
-            op=cv2.MORPH_CLOSE,
-            kernel=closing_mask
-        )
+        # Domknięcie krawędzi
+        closed_frame = Filter.closing(canny_frame, 2)
 
-        result = np.zeros_like(org_frame)
-        red_color = (255, 0, 0)
-        result[:] = red_color
-        # filtered_frame = Filter.closing(filtered_frame, 3)
-        # filtered_frame = Filter.closing(filtered_frame, 6)
-        contours, _ = cv2.findContours(
-            image=filtered_frame,
-            mode=cv2.RETR_CCOMP,
-            method=cv2.CHAIN_APPROX_SIMPLE
-        )
-        
-        result = Draw.contourFill(result,contours, Draw.COLOR_GREEN)
-        # filtered_frame = Filter.remove_small_objects(filtered_frame, 250)
+        # Znalezienie krawędzi
+        contours = Segmentation.findContours(closed_frame)
 
-        keyPoints = bd.detect_objects(result)
+        # Wypełnienie znalezionych krawędzi
+        contours_filled = Draw.contourFill(gray_frame, contours)
 
-        video.show_frame(
-            Draw.keyPoints(
-                result,
-                keyPoints,
-                Draw.COLOR_RED
-            )
-        )
+        # Zamknięcie krawędzi (tylko do pierścionków)
+        closed_frame = Filter.closing(canny_frame, 4)
 
-        # video.show_frame(
-        #     Draw.rectangle(
-        #         result,
-        #         [[(0,0),(300,300)],[(400,400),(600,600)]],
-        #         Draw.COLOR_RED
-        #     )
-        # )
+        # Znalezienie pierścionków
+        rings_key_points = RINGS_DETECTOR.detect_objects(closed_frame)
+
+        # Znalezienie kolczyków
+        earings_key_points = EARINGS_DETECTOR.detect_objects(contours_filled)
+
+        # Znalezienie naszyjników
+        neckles_key_points = NECKLES_DETECTOR.detect_objects(contours_filled)
+
+        # Połączenie obrazu głównego z punktami
+        # Wyszukiwanie pierścieni działa najlepiej
+        result = Draw.keyPoints(org_frame, rings_key_points, Draw.COLOR_RED)
+        result = Draw.keyPoints(result, earings_key_points, Draw.COLOR_GREEN)
+        result = Draw.keyPoints(result, neckles_key_points, Draw.COLOR_BLUE)
+
+        video.show_frame(result)
 
 
 if __name__ == "__main__":
