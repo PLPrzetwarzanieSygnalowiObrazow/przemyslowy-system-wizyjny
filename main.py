@@ -67,14 +67,9 @@ NECKLES_DETECTOR = BlobDetector(
 
 
 def main():
-    video = Video(path=VIDEO_FILE_PATH, frame_no=500)
+    video = Video(path=VIDEO_FILE_PATH, frame_no=1000)
 
-    while not video.is_ended():
-        # Pobranie pojedynczej klatki
-        org_frame = video.get_frame()
-        if org_frame is None:
-            break
-
+    while (org_frame := video.get_frame()) is not None:
         # Zamiana klatki na odcienie szarości
         gray_frame = cv2.cvtColor(org_frame, cv2.COLOR_BGR2GRAY)
 
