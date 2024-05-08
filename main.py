@@ -107,7 +107,7 @@ def main():
         result = Draw.keyPoints(result, neckles_key_points, Draw.COLOR_BLUE)
 
         video.show_frame(result)
-
+        
 
 if __name__ == "__main__":
     main()
