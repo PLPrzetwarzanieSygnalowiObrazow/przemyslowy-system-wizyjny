@@ -19,7 +19,7 @@ class Video:
     width: int = field(default=480)
     height: int = field(default=320)
 
-    frame_no: int = field(default=0, init=False)
+    frame_no: int = field(default=0, init=True)
     frame_flag: bool = field(default=True, init=False)
     capture: cv2.VideoCapture = field(default=None, init=False)
     current_frame: numpy.ndarray = field(default=None, init=False)
@@ -40,7 +40,7 @@ class Video:
         retry_counter = 0
 
         # Attempt/retry to open file, until number of retries is not exceeded
-        while ((retry_counter := retry_counter + 1) <= self.RETRY_LIMIT_OPEN):
+        while (retry_counter := retry_counter + 1) <= self.RETRY_LIMIT_OPEN:
 
             # Open video file
             self.capture = cv2.VideoCapture(self.path)
@@ -51,6 +51,7 @@ class Video:
                 # Set video resolution
                 self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
                 self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
+                self.capture.set(cv2.CAP_PROP_POS_FRAMES, self.frame_no)
                 break
 
         # execute if loop was not exited with break
@@ -83,10 +84,7 @@ class Video:
         return self.current_frame
 
     def get_gray_frame(self) -> numpy.ndarray:
-        self.current_frame = cv2.cvtColor(
-            self.get_frame(),
-            cv2.COLOR_BGR2GRAY
-        )
+        self.current_frame = cv2.cvtColor(self.get_frame(), cv2.COLOR_BGR2GRAY)
 
         return self.current_frame
 

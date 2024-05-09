@@ -18,10 +18,13 @@ class BlobDetector:
     max_area: int = field(default=40000, init=True)
     filter_by_circularity: bool = field(default=True, init=True)
     min_circularity: float = field(default=0.05, init=True)
+    max_circularity: float = field(default=0.95, init=True)
     filter_by_convexity: bool = field(default=False, init=True)
     min_convexity: int = field(default=0.1, init=True)
+    max_convexity: int = field(default=0.9, init=True)
     filter_by_inertia: bool = field(default=False, init=True)
     min_inertia_ratio: float = field(default=0.2, init=True)
+    max_inertia_ratio: float = field(default=0.8, init=True)
 
     detector_params: cv2.SimpleBlobDetector = field(
         default=cv2.SimpleBlobDetector_Params(), init=False
