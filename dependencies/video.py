@@ -48,6 +48,8 @@ class Video:
 
             # Check if file was opened
             if self.capture.isOpened():
+                print("height: ", self.height)
+                print("width: ", self.width)
                 # Set video resolution
                 self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
                 self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
@@ -81,6 +83,11 @@ class Video:
             print(self.MSG_VIDEO_ENDED)
             return None
 
+        self.current_frame = cv2.resize(
+            self.current_frame,
+            (self.width, self.height)
+        )
+        print(self.current_frame.shape)
         return self.current_frame
 
     def get_gray_frame(self) -> numpy.ndarray:

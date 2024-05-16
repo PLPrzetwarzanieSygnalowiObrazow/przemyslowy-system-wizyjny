@@ -13,14 +13,15 @@ from dependencies.filter import Filter
 from dependencies.blobDetector import BlobDetector
 from dependencies.draw import Draw
 from dependencies.segmentation import Segmentation
+from dependencies.objectTracker import ObjectTracker
 
 VIDEO_FILE_PATH = "./assets/nagranie_v4_cut.mp4"
 EARINGS_DETECTOR = BlobDetector(
     filter_by_color=True,
     blob_color=0,
     filter_by_area=True,
-    min_area=1200,
-    max_area=10900,
+    min_area=300,
+    max_area=2725,
     filter_by_circularity=True,
     min_circularity=0.35,
     max_circularity=0.80,
@@ -35,8 +36,8 @@ RINGS_DETECTOR = BlobDetector(
     filter_by_color=True,
     blob_color=0,
     filter_by_area=True,
-    min_area=7000,
-    max_area=12000,
+    min_area=1750,
+    max_area=3000,
     filter_by_circularity=True,
     min_circularity=0.6,
     max_circularity=1,
@@ -51,8 +52,8 @@ NECKLES_DETECTOR = BlobDetector(
     filter_by_color=True,
     blob_color=0,
     filter_by_area=True,
-    min_area=100000,
-    max_area=10000000,
+    min_area=25000,
+    max_area=2500000,
     filter_by_circularity=True,
     min_circularity=0.25,
     max_circularity=0.9,
@@ -66,7 +67,8 @@ NECKLES_DETECTOR = BlobDetector(
 
 
 def main():
-    video = Video(path=VIDEO_FILE_PATH, frame_no=550)
+    video = Video(path=VIDEO_FILE_PATH, frame_no=0)
+    tracker = ObjectTracker()
 
     while (org_frame := video.get_frame()) is not None:
         # Zamiana klatki na odcienie szarości
@@ -89,7 +91,7 @@ def main():
 
         # Zamknięcie krawędzi (tylko do pierścionków)
         closed_frame = Filter.closing(canny_frame, 4)
-
+        # print(canny_frame.shape)
         # Znalezienie pierścionków
         rings_key_points = RINGS_DETECTOR.detect_objects(closed_frame)
 
@@ -99,11 +101,15 @@ def main():
         # Znalezienie naszyjników
         neckles_key_points = NECKLES_DETECTOR.detect_objects(contours_filled)
 
+        tracker.trackObjects(rings_key_points=rings_key_points)
         # Połączenie obrazu głównego z punktami
         # Wyszukiwanie pierścieni działa najlepiej
-        result = Draw.keyPoints(org_frame, rings_key_points, Draw.COLOR_RED)
+        result = Draw.keyPoints(canny_frame, rings_key_points, Draw.COLOR_RED)
         result = Draw.keyPoints(result, earings_key_points, Draw.COLOR_GREEN)
         result = Draw.keyPoints(result, neckles_key_points, Draw.COLOR_BLUE)
+
+        # result = Draw.rectangle(
+        #     result, [[(200, 0), (300, 300)]], color=Draw.COLOR_RED)
 
         video.show_frame(result)
 
