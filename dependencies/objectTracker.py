@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 import cv2
-from dependencies.objectsDefinition import Ring, Necklace, Bracelet
+from dependencies.objectsDefinition import Ring, Necklace, Earings
+
 X = 0
 Y = 1
 
@@ -10,7 +11,7 @@ class ObjectTracker:
 
     necklaces: list[Necklace] = field(init=False, default_factory=list)
     rings: list[Ring] = field(init=False, default_factory=list)
-    bracelets: list[Bracelet] = field(init=False, default_factory=list)
+    earings: list[Earings] = field(init=False, default_factory=list)
 
     __analyzed_frames: int = field(init=False, default=0)
 
@@ -21,21 +22,36 @@ class ObjectTracker:
             self,
             rings_key_points: tuple[cv2.KeyPoint] = tuple(),
             necklaces_key_points: tuple[cv2.KeyPoint] = tuple(),
-            bracelets_key_points: tuple[cv2.KeyPoint] = tuple()
-    ):
+            earings_key_points: tuple[cv2.KeyPoint] = tuple()
+    ) -> None:
+        '''
+            Public method to track objects in the video frame.
+            Invokes tracking methods for know object types:
+                - rings
+                - necklaces
+                - earings
+
+            returns None
+        '''
         self.__count_analyzed_frames()
+
+        # track rings
         self.__track_objects_of_given_type(
             Ring,
             self.rings,
             rings_key_points
         )
+
+        # track necklace
         self.__track_objects_of_given_type(
             Necklace,
             self.necklaces,
             necklaces_key_points
         )
 
-    def clean_up_phantom_objects(self):
+        return None
+
+    def clean_up_phantom_objects(self) -> None:
         '''
             Method to remove wrongly identified objects found due to any artifacts on the frame.
         '''
@@ -47,8 +63,8 @@ class ObjectTracker:
 
     @staticmethod
     def __track_objects_of_given_type(
-        object: Ring | Necklace | Bracelet,
-        objectsToTrack: list[Ring | Necklace | Bracelet],
+        object: Ring | Necklace | Earings,
+        objectsToTrack: list[Ring | Necklace | Earings],
         key_points: tuple[cv2.KeyPoint] = tuple()
     ):
         '''
@@ -111,8 +127,8 @@ class ObjectTracker:
 
     @staticmethod
     def __object_assignment_validation(
-        object: Ring | Necklace | Bracelet,
-        object_list: list[Ring | Necklace | Bracelet],
+        object: Ring | Necklace | Earings,
+        object_list: list[Ring | Necklace | Earings],
         objectID: int,
         x_distance: float,
         y_distance: float
@@ -151,8 +167,8 @@ class ObjectTracker:
 
     @staticmethod
     def __add_new_object(
-        object: Ring | Necklace | Bracelet,
-        listToAppend: list[Ring | Necklace | Bracelet],
+        object: Ring | Necklace | Earings,
+        listToAppend: list[Ring | Necklace | Earings],
         key_point: tuple[float, float]
     ):
 
@@ -166,7 +182,7 @@ class ObjectTracker:
 
     @staticmethod
     def __append_object_position(
-        listToAppend: list[Ring | Necklace | Bracelet],
+        listToAppend: list[Ring | Necklace | Earings],
         object_id: int,
         key_point: tuple[float, float]
     ):
@@ -180,7 +196,7 @@ class ObjectTracker:
 
     @staticmethod
     def __get_distance_table(
-        objectsToTrack: list[Ring | Necklace | Bracelet],
+        objectsToTrack: list[Ring | Necklace | Earings],
         key_points: tuple[cv2.KeyPoint] = tuple()
     ) -> dict[int, tuple[float, float]]:
         '''
@@ -237,14 +253,15 @@ class ObjectTracker:
         return (ring_id, x_dist, y_dist)
 
     @staticmethod
-    def __reset_append_flag(objectList:  list[Ring | Necklace | Bracelet]) -> None:
+    def __reset_append_flag(objectList:  list[Ring | Necklace | Earings]) -> None:
+
         for object in objectList:
             object.resetAppendFlag()
 
         return None
 
     @staticmethod
-    def __increment_missing_on_frames(objectList:  list[Ring | Necklace | Bracelet]) -> None:
+    def __increment_missing_on_frames(objectList:  list[Ring | Necklace | Earings]) -> None:
 
         for object in objectList:
             object.incrementMissingOnFrames()

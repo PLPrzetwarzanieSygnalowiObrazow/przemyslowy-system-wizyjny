@@ -7,8 +7,27 @@ Y = 1
 
 @dataclass
 class JewelryObject:
+    '''
+        Parent class to define jewelry object.
+        Configurable attributes are written in Capital letters only.
+        Inheritance classes defines following attributes:
+            - X_AXIS_MOVEMENT_ERROR <- movement threshold in X axis (in pixels),
+                which will take up any imperfections in conveyor belt movement.
+            - Y_AXIS_MOVEMENT_ERROR <- movement threshold in Y axis (in pixels),
+                which will take up any imperfections in conveyor belt movement.
+            - X_AXIS_MOVEMENT_PER_FRAME <- represents movement of objects in the frame horizontally,
+                it is a result of moving conveyor belt. Value is a number of pixels.
+            - Y_AXIS_MOVEMENT_PER_FRAME <- represents movement of objects in the frame vertically,
+                allows to take up scenarios where belt is not moving ideally horizontal. Value is a number of pixels.
+            - MARK_AS_INVISIBLE_AFTER_X_COORDINATE <- threshold where objects might disappear from frame.
+                Value is a number of pixels.
+            - MARK_AS_INVISIBLE_AFTER_MISSING_ON_FRAMES <- represents the number of frames,
+                where object must be missing, to be considered as not visible.
 
-    positions: list[cv2.KeyPoint] = field(init=False, default_factory=list)
+        WARNING: To mark object as not visible ALL of the following criteria values must be met:
+            - MARK_AS_INVISIBLE_AFTER_X_COORDINATE
+            - MARK_AS_INVISIBLE_AFTER_MISSING_ON_FRAMES
+    '''
 
     OBJECT_NAME: str = field(init=True, default="Obiekt biżuteryjny")
 
@@ -18,12 +37,14 @@ class JewelryObject:
     X_AXIS_MOVEMENT_PER_FRAME: int = field(init=False, default=None)
     Y_AXIS_MOVEMENT_PER_FRAME: int = field(init=False, default=None)
 
+    MARK_AS_INVISIBLE_AFTER_X_COORDINATE: int = field(init=False, default=None)
+
     MARK_AS_INVISIBLE_AFTER_MISSING_ON_FRAMES: int = field(
         init=False,
         default=10
     )
 
-    MARK_AS_INVISIBLE_AFTER_X_COORDINATE: int = field(init=False, default=800)
+    positions: list[cv2.KeyPoint] = field(init=False, default_factory=list)
 
     __missing_on_frames: int = field(init=False, default=0)
     __found_on_frames: int = field(init=False, default=1)
@@ -56,6 +77,7 @@ class JewelryObject:
         # if object is not visible return, as no further checks are needed
         if not self.__visible:
             return None
+
         # check if the number of frames where object was missing exceeded the threshold AND
         # if the last object's position was near end of frame
         if (
@@ -133,8 +155,10 @@ class Necklace (JewelryObject):
 
 
 @dataclass
-class Bracelet (JewelryObject):
+class Earings (JewelryObject):
     OBJECT_NAME: str = "Bransoletka"
 
     X_AXIS_MOVEMENT_PER_FRAME: int = 4
     Y_AXIS_MOVEMENT_PER_FRAME: int = 1
+
+    MARK_AS_INVISIBLE_AFTER_X_COORDINATE: int = 1_000
