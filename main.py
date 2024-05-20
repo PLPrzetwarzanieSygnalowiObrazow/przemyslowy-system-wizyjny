@@ -10,66 +10,19 @@ import copy
 
 from dependencies.video import Video
 from dependencies.filter import Filter
-from dependencies.blobDetector import BlobDetector
+
 from dependencies.draw import Draw
 from dependencies.segmentation import Segmentation
+from dependencies.blobDetectorInit import *
 from dependencies.objectTracker import ObjectTracker
+
 
 VIDEO_FILE_PATH = "./assets/nagranie_v4_cut.mp4"
 
 
 def main():
-    video = Video(path=VIDEO_FILE_PATH, frame_no=550)
+    video = Video(path=VIDEO_FILE_PATH, frame_no=400)
 
-    EARINGS_DETECTOR = BlobDetector(
-        filter_by_color=True,
-        blob_color=0,
-        filter_by_area=True,
-        min_area=800,
-        max_area=6_200,
-        filter_by_circularity=True,
-        min_circularity=0.25,
-        max_circularity=0.65,
-        filter_by_convexity=True,
-        min_convexity=0.15,
-        max_convexity=0.80,
-        filter_by_inertia=True,
-        min_inertia_ratio=0.02,
-        max_inertia_ratio=0.60,
-    )
-    RINGS_DETECTOR = BlobDetector(
-        filter_by_color=True,
-        blob_color=0,
-        filter_by_area=True,
-        min_area=7000/(1920/video.width),
-        max_area=12000/(1920/video.width),
-        filter_by_circularity=True,
-        min_circularity=0.6,
-        max_circularity=1,
-        filter_by_convexity=True,
-        min_convexity=0.6,
-        max_convexity=1,
-        filter_by_inertia=True,
-        min_inertia_ratio=0.5,
-        max_inertia_ratio=1,
-    )
-
-    NECKLACES_DETECTOR = BlobDetector(
-        filter_by_color=True,
-        blob_color=0,
-        filter_by_area=True,
-        min_area=100_000,
-        max_area=900_000,
-        filter_by_circularity=True,
-        min_circularity=0.25,
-        max_circularity=0.9,
-        filter_by_convexity=False,
-        min_convexity=0.1,
-        max_convexity=1.0,
-        filter_by_inertia=False,
-        min_inertia_ratio=0.4,
-        max_inertia_ratio=1,
-    )
     tracker = ObjectTracker()
 
     while (org_frame := video.get_frame()) is not None:
