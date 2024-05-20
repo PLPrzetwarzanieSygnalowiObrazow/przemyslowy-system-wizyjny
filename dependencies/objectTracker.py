@@ -104,7 +104,11 @@ class ObjectTracker:
             bracelets_key_points: tuple[cv2.KeyPoint] = tuple()
     ):
         self.__count_analyzed_frames()
-        self.__track_objects_of_given_type(self.rings, rings_key_points)
+        self.__track_objects_of_given_type(
+            Ring,
+            self.rings,
+            rings_key_points
+        )
 
     def clean_up_phantom_objects(self):
         '''
@@ -121,7 +125,8 @@ class ObjectTracker:
 
     @staticmethod
     def __track_objects_of_given_type(
-        objectsToTrack: Ring | Necklace | Bracelet,
+        object: Ring | Necklace | Bracelet,
+        objectsToTrack: list[Ring | Necklace | Bracelet],
         key_points: tuple[cv2.KeyPoint] = tuple()
     ):
         '''
@@ -144,7 +149,7 @@ class ObjectTracker:
             # so create new object entry and continue to next key point
             if not distanceTable[KP_id]:
                 ObjectTracker.__add_new_object(
-                    Ring(),
+                    object,
                     objectsToTrack,
                     key_points[KP_id]
                 )
@@ -170,7 +175,7 @@ class ObjectTracker:
                 print("X dist: ", x_dist)
                 print("Y dist: ", y_dist)
                 ObjectTracker.__add_new_object(
-                    Ring(),
+                    object,
                     objectsToTrack,
                     key_points[KP_id]
                 )
@@ -227,7 +232,7 @@ class ObjectTracker:
     ):
 
         # create new object in list
-        listToAppend.append(object)
+        listToAppend.append(object())
 
         # append positions for new object
         ObjectTracker.__append_object_position(listToAppend, -1, key_point)
@@ -245,6 +250,7 @@ class ObjectTracker:
             listToAppend[object_id]
             .appendPositions(key_point)
         )
+
         return None
 
     @staticmethod
