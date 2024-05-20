@@ -58,7 +58,7 @@ class ObjectTracker:
         print("Analyzed frames: ", self.__analyzed_frames)
         for ring in self.rings:
             if ring.getFoundOnFrames() < 10:
-                print("Found on frames: ", ring.getFoundOnFrames())
+                # print("Found on frames: ", ring.getFoundOnFrames())
                 self.rings.remove(ring)
 
     @staticmethod
