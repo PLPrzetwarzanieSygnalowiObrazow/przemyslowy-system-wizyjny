@@ -1,119 +1,8 @@
 from dataclasses import dataclass, field
 import cv2
-
+from dependencies.objectsDefinition import Ring, Necklace, Bracelet
 X = 0
 Y = 1
-
-
-@dataclass
-class JewelryObject:
-
-    positions: list[cv2.KeyPoint] = field(init=False, default_factory=list)
-
-    OBJECT_NAME: str = field(init=True, default="Obiekt biżuteryjny")
-
-    X_AXIS_MOVEMENT_ERROR: int = field(init=False, default=10)
-    Y_AXIS_MOVEMENT_ERROR: int = field(init=False, default=10)
-
-    X_AXIS_MOVEMENT_PER_FRAME: int = field(init=False, default=None)
-    Y_AXIS_MOVEMENT_PER_FRAME: int = field(init=False, default=None)
-
-    MARK_AS_INVISIBLE_AFTER_MISSING_ON_FRAMES: int = field(
-        init=False,
-        default=10
-    )
-
-    MARK_AS_INVISIBLE_AFTER_X_COORDINATE: int = field(init=False, default=800)
-
-    __missing_on_frames: int = field(init=False, default=0)
-    __found_on_frames: int = field(init=False, default=1)
-    __appended: bool = field(init=False, default=True)
-    __visible: bool = field(init=False, default=True)
-
-    def __post_init__(self):
-        print(f"New {self.OBJECT_NAME} found")
-
-    def isVisible(self) -> bool:
-        return self.__visible
-
-    def getFoundOnFrames(self) -> int:
-        return self.__found_on_frames
-
-    def getMissingOnFrames(self) -> int:
-        return self.__missing_on_frames
-
-    def appendPositions(self, key_point: cv2.KeyPoint):
-        self.positions.append(key_point)
-        self.__appended = True
-        self.__missing_on_frames = 0
-        self.__found_on_frames = self.__found_on_frames + 1
-
-    def resetAppendFlag(self):
-        self.__appended = False
-
-    def incrementMissingOnFrames(self):
-        if not self.__visible:
-            return
-
-        if (
-            (self.__missing_on_frames >= self.MARK_AS_INVISIBLE_AFTER_MISSING_ON_FRAMES) and
-            (
-                self.positions[-1].pt[X] >= self.MARK_AS_INVISIBLE_AFTER_X_COORDINATE
-            )
-        ):
-            self.__visible = False
-            print(f"{self.OBJECT_NAME} marked as invisible")
-            return
-
-        if not self.__appended:
-            self.__missing_on_frames = self.__missing_on_frames + 1
-
-    def calculateDistance(self, key_point: cv2.KeyPoint = None):
-
-        lastPosition = self.positions[-1]
-        movement_estimation = self.getAcceptableMovement()
-        x_distance = abs(
-            key_point.pt[X] - (lastPosition.pt[X] + movement_estimation[X])
-        )
-        y_distance = abs(
-            key_point.pt[Y] - (lastPosition.pt[Y] + movement_estimation[Y])
-        )
-        return (x_distance, y_distance)
-
-    def getAcceptableMovement(self) -> tuple[int, int]:
-        return (
-            self.__missing_on_frames * self.X_AXIS_MOVEMENT_PER_FRAME,
-            self.__missing_on_frames * self.Y_AXIS_MOVEMENT_PER_FRAME
-        )
-
-
-@dataclass
-class Ring (JewelryObject):
-    OBJECT_NAME: str = "Pierścionek"
-
-    X_AXIS_MOVEMENT_PER_FRAME: int = 4
-    Y_AXIS_MOVEMENT_PER_FRAME: int = 1
-
-    MARK_AS_INVISIBLE_AFTER_X_COORDINATE: int = 1_000
-
-
-@dataclass
-class Necklace (JewelryObject):
-    OBJECT_NAME: str = "Naszyjnik"
-
-    X_AXIS_MOVEMENT_PER_FRAME: int = 0
-    Y_AXIS_MOVEMENT_PER_FRAME: int = 0
-
-    X_AXIS_MOVEMENT_ERROR = 38
-    Y_AXIS_MOVEMENT_ERROR = 38
-
-
-@dataclass
-class Bracelet (JewelryObject):
-    OBJECT_NAME: str = "Bransoletka"
-
-    X_AXIS_MOVEMENT_PER_FRAME: int = 4
-    Y_AXIS_MOVEMENT_PER_FRAME: int = 1
 
 
 @dataclass
@@ -165,7 +54,6 @@ class ObjectTracker:
         '''
             Method to perform necessary operations to track rings
         '''
-
         # get distance tables
         distanceTable = ObjectTracker.__get_distance_table(
             objectsToTrack,
@@ -224,7 +112,7 @@ class ObjectTracker:
     @staticmethod
     def __object_assignment_validation(
         object: Ring | Necklace | Bracelet,
-        object_list: list[JewelryObject],
+        object_list: list[Ring | Necklace | Bracelet],
         objectID: int,
         x_distance: float,
         y_distance: float
@@ -313,15 +201,18 @@ class ObjectTracker:
             # loop through object list
             for object_id in range(0, len(objectsToTrack)):
 
-                # get distance between current object coordinates and key point in format
-                # (x_dist, y_dist)
-                distance = (
-                    objectsToTrack[object_id]
-                    .calculateDistance(key_points[KP_id])
-                )
+                # consider only visible objects
+                if objectsToTrack[object_id].isVisible():
 
-                # append dict for current key point
-                distanceTableCurrentKeyPoint[object_id] = distance
+                    # get distance between current object coordinates and key point in format
+                    # (x_dist, y_dist)
+                    distance = (
+                        objectsToTrack[object_id]
+                        .calculateDistance(key_points[KP_id])
+                    )
+
+                    # append dict for current key point
+                    distanceTableCurrentKeyPoint[object_id] = distance
 
             # append distances for last calculated key point
             distanceTable[KP_id] = distanceTableCurrentKeyPoint
