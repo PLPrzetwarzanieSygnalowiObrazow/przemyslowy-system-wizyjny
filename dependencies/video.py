@@ -48,8 +48,6 @@ class Video:
 
             # Check if file was opened
             if self.capture.isOpened():
-                print("height: ", self.height)
-                print("width: ", self.width)
                 # Set video resolution
                 self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
                 self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
