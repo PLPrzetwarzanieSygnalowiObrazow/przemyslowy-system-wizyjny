@@ -16,8 +16,8 @@ class Video:
     RETRY_LIMIT_OPEN: Final[int] = 3
 
     path: str = field(default=None)
-    width: int = field(default=480)
-    height: int = field(default=320)
+    width: int = field(default=1280)
+    height: int = field(default=720)
 
     frame_no: int = field(default=0, init=True)
     frame_flag: bool = field(default=True, init=False)
@@ -87,7 +87,6 @@ class Video:
             self.current_frame,
             (self.width, self.height)
         )
-        print(self.current_frame.shape)
         return self.current_frame
 
     def get_gray_frame(self) -> numpy.ndarray:
