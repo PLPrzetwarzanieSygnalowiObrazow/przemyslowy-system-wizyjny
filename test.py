@@ -2,8 +2,8 @@ t = {
     1: {
         1: (200, 300),
         2: (100, 100),
-        3: (10, 10),
-        4: (1, 1)
+        3: (1, 100),
+        4: (2, 1)
     },
     2: {
         1: (3, 12),
@@ -32,5 +32,6 @@ d = {
 
 for KP_id in t:
     t[KP_id]
-    min_id = min(t[KP_id], key=lambda k: t[KP_id][k])
+    min_id = min(t[KP_id], key=lambda k: (
+        abs(t[KP_id][k][0]) + abs(t[KP_id][k][1])))
     print("KP: ", KP_id, " min val id: ", min_id)

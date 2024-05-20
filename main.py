@@ -57,7 +57,7 @@ def main():
         necklaces_key_points = NECKLACES_DETECTOR.detect_objects(
             contours_filled)
 
-        # tracker.trackObjects(rings_key_points=rings_key_points)
+        tracker.trackObjects(rings_key_points=rings_key_points)
         # Połączenie obrazu głównego z punktami
         # Wyszukiwanie pierścieni działa najlepiej
         # if necklaces_key_points:
@@ -73,6 +73,9 @@ def main():
         #     result, [[(200, 0), (300, 300)]], color=Draw.COLOR_RED)
 
         video.show_frame(result)
+
+    tracker.clean_up_phantom_objects()
+    print(len(tracker.rings))
 
 
 if __name__ == "__main__":
