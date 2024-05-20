@@ -21,7 +21,7 @@ VIDEO_FILE_PATH = "./assets/nagranie_v4_cut.mp4"
 
 
 def main():
-    video = Video(path=VIDEO_FILE_PATH, frame_no=400)
+    video = Video(path=VIDEO_FILE_PATH, frame_no=700)
 
     tracker = ObjectTracker()
 
@@ -46,9 +46,9 @@ def main():
 
         # Zamknięcie krawędzi (tylko do pierścionków)
         # closed_frame = Filter.closing(canny_frame, 4)
-        # print(canny_frame.shape)
+
         # Znalezienie pierścionków
-        # rings_key_points = RINGS_DETECTOR.detect_objects(closed_frame)
+        rings_key_points = RINGS_DETECTOR.detect_objects(closed_frame)
 
         # Znalezienie kolczyków
         earings_key_points = EARINGS_DETECTOR.detect_objects(contours_filled)
@@ -60,9 +60,13 @@ def main():
         # tracker.trackObjects(rings_key_points=rings_key_points)
         # Połączenie obrazu głównego z punktami
         # Wyszukiwanie pierścieni działa najlepiej
-        # result = Draw.keyPoints(org_frame, rings_key_points, Draw.COLOR_RED)
+        # if necklaces_key_points:
+        #     print("x: ", necklaces_key_points[0].pt[0])
+        #     # print("y: ", necklaces_key_points[0].pt[1])
+
         result = Draw.keyPoints(
-            contours_filled, earings_key_points, Draw.COLOR_GREEN)
+            gray_frame, rings_key_points, Draw.COLOR_RED)
+        result = Draw.keyPoints(result, earings_key_points, Draw.COLOR_GREEN)
         result = Draw.keyPoints(result, necklaces_key_points, Draw.COLOR_BLUE)
 
         # result = Draw.rectangle(
