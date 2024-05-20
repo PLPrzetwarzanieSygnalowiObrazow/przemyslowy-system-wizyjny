@@ -45,9 +45,6 @@ def main():
         # Wypełnienie znalezionych krawędzi
         contours_filled = Draw.contourFill(gray_frame, contours)
 
-        # Zamknięcie krawędzi (tylko do pierścionków)
-        # closed_frame = Filter.closing(canny_frame, 4)
-
         # Znalezienie pierścionków
         rings_KP = RINGS_DETECTOR.detect_objects(closed_frame)
 
@@ -63,13 +60,9 @@ def main():
             necklaces_key_points=necklaces_KP
         )
 
-        result = Draw.keyPoints(
-            gray_frame, rings_KP, Draw.COLOR_RED)
+        result = Draw.keyPoints(org_frame, rings_KP, Draw.COLOR_RED)
         result = Draw.keyPoints(result, earings_KP, Draw.COLOR_GREEN)
         result = Draw.keyPoints(result, necklaces_KP, Draw.COLOR_BLUE)
-
-        # result = Draw.rectangle(
-        #     result, [[(200, 0), (300, 300)]], color=Draw.COLOR_RED)
 
         video.show_frame(result)
 
