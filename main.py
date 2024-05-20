@@ -21,11 +21,12 @@ VIDEO_FILE_PATH = "./assets/nagranie_v4_cut.mp4"
 
 
 def main():
-    video = Video(path=VIDEO_FILE_PATH, frame_no=700)
+    video = Video(path=VIDEO_FILE_PATH, frame_no=0)
 
     tracker = ObjectTracker()
 
     while (org_frame := video.get_frame()) is not None:
+
         # Zamiana klatki na odcienie szarości
         gray_frame = cv2.cvtColor(org_frame, cv2.COLOR_BGR2GRAY)
 
@@ -48,26 +49,24 @@ def main():
         # closed_frame = Filter.closing(canny_frame, 4)
 
         # Znalezienie pierścionków
-        rings_key_points = RINGS_DETECTOR.detect_objects(closed_frame)
+        rings_KP = RINGS_DETECTOR.detect_objects(closed_frame)
 
         # Znalezienie kolczyków
-        earings_key_points = EARINGS_DETECTOR.detect_objects(contours_filled)
+        earings_KP = EARINGS_DETECTOR.detect_objects(contours_filled)
 
         # Znalezienie naszyjników
-        necklaces_key_points = NECKLACES_DETECTOR.detect_objects(
+        necklaces_KP = NECKLACES_DETECTOR.detect_objects(
             contours_filled)
 
-        tracker.trackObjects(rings_key_points=rings_key_points)
-        # Połączenie obrazu głównego z punktami
-        # Wyszukiwanie pierścieni działa najlepiej
-        # if necklaces_key_points:
-        #     print("x: ", necklaces_key_points[0].pt[0])
-        #     # print("y: ", necklaces_key_points[0].pt[1])
+        tracker.trackObjects(
+            rings_key_points=rings_KP,
+            necklaces_key_points=necklaces_KP
+        )
 
         result = Draw.keyPoints(
-            gray_frame, rings_key_points, Draw.COLOR_RED)
-        result = Draw.keyPoints(result, earings_key_points, Draw.COLOR_GREEN)
-        result = Draw.keyPoints(result, necklaces_key_points, Draw.COLOR_BLUE)
+            gray_frame, rings_KP, Draw.COLOR_RED)
+        result = Draw.keyPoints(result, earings_KP, Draw.COLOR_GREEN)
+        result = Draw.keyPoints(result, necklaces_KP, Draw.COLOR_BLUE)
 
         # result = Draw.rectangle(
         #     result, [[(200, 0), (300, 300)]], color=Draw.COLOR_RED)
@@ -75,7 +74,8 @@ def main():
         video.show_frame(result)
 
     tracker.clean_up_phantom_objects()
-    print(len(tracker.rings))
+    print("Found rings: ", len(tracker.rings))
+    print("Found necklaces: ", len(tracker.necklaces))
 
 
 if __name__ == "__main__":

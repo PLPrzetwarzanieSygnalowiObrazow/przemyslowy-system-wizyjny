@@ -9,15 +9,32 @@ Y = 1
 class JewelryObject:
 
     positions: list[cv2.KeyPoint] = field(init=False, default_factory=list)
-    visible: bool = field(init=False, default=True)
+
+    OBJECT_NAME: str = field(init=True, default="Obiekt biżuteryjny")
+
     X_AXIS_MOVEMENT_ERROR: int = field(init=False, default=10)
     Y_AXIS_MOVEMENT_ERROR: int = field(init=False, default=10)
 
     X_AXIS_MOVEMENT_PER_FRAME: int = field(init=False, default=None)
     Y_AXIS_MOVEMENT_PER_FRAME: int = field(init=False, default=None)
+
+    MARK_AS_INVISIBLE_AFTER_MISSING_ON_FRAMES: int = field(
+        init=False,
+        default=10
+    )
+
+    MARK_AS_INVISIBLE_AFTER_X_COORDINATE: int = field(init=False, default=800)
+
     __missing_on_frames: int = field(init=False, default=0)
     __found_on_frames: int = field(init=False, default=1)
     __appended: bool = field(init=False, default=True)
+    __visible: bool = field(init=False, default=True)
+
+    def __post_init__(self):
+        print(f"New {self.OBJECT_NAME} found")
+
+    def isVisible(self) -> bool:
+        return self.__visible
 
     def getFoundOnFrames(self) -> int:
         return self.__found_on_frames
@@ -35,6 +52,19 @@ class JewelryObject:
         self.__appended = False
 
     def incrementMissingOnFrames(self):
+        if not self.__visible:
+            return
+
+        if (
+            (self.__missing_on_frames >= self.MARK_AS_INVISIBLE_AFTER_MISSING_ON_FRAMES) and
+            (
+                self.positions[-1].pt[X] >= self.MARK_AS_INVISIBLE_AFTER_X_COORDINATE
+            )
+        ):
+            self.__visible = False
+            print(f"{self.OBJECT_NAME} marked as invisible")
+            return
+
         if not self.__appended:
             self.__missing_on_frames = self.__missing_on_frames + 1
 
@@ -61,20 +91,21 @@ class JewelryObject:
 class Ring (JewelryObject):
     OBJECT_NAME: str = "Pierścionek"
 
-    # X_AXIS_MOVEMENT_PER_FRAME: int = 4
-    # Y_AXIS_MOVEMENT_PER_FRAME: int = 1
+    X_AXIS_MOVEMENT_PER_FRAME: int = 4
+    Y_AXIS_MOVEMENT_PER_FRAME: int = 1
 
-    def __post_init__(self):
-        self.X_AXIS_MOVEMENT_PER_FRAME = 3
-        self.Y_AXIS_MOVEMENT_PER_FRAME = 1
+    MARK_AS_INVISIBLE_AFTER_X_COORDINATE: int = 1_000
 
 
 @dataclass
 class Necklace (JewelryObject):
     OBJECT_NAME: str = "Naszyjnik"
 
-    X_AXIS_MOVEMENT_PER_FRAME: int = 10
-    Y_AXIS_MOVEMENT_PER_FRAME: int = 2
+    X_AXIS_MOVEMENT_PER_FRAME: int = 0
+    Y_AXIS_MOVEMENT_PER_FRAME: int = 0
+
+    X_AXIS_MOVEMENT_ERROR = 38
+    Y_AXIS_MOVEMENT_ERROR = 38
 
 
 @dataclass
@@ -109,6 +140,11 @@ class ObjectTracker:
             self.rings,
             rings_key_points
         )
+        self.__track_objects_of_given_type(
+            Necklace,
+            self.necklaces,
+            necklaces_key_points
+        )
 
     def clean_up_phantom_objects(self):
         '''
@@ -120,9 +156,6 @@ class ObjectTracker:
                 print("Found on frames: ", ring.getFoundOnFrames())
                 self.rings.remove(ring)
 
-    def __track_necklaces(self):
-        pass
-
     @staticmethod
     def __track_objects_of_given_type(
         object: Ring | Necklace | Bracelet,
@@ -132,6 +165,7 @@ class ObjectTracker:
         '''
             Method to perform necessary operations to track rings
         '''
+
         # get distance tables
         distanceTable = ObjectTracker.__get_distance_table(
             objectsToTrack,
@@ -161,7 +195,12 @@ class ObjectTracker:
             )
 
             # check if found closest object meets criteria to be identified as this the same
-            if ObjectTracker.__object_assignment_validation(objectsToTrack, closest_ring_id, x_dist, y_dist):
+            if ObjectTracker.__object_assignment_validation(
+                object,
+                objectsToTrack,
+                closest_ring_id,
+                x_dist, y_dist
+            ):
 
                 # if yes append to positions
                 ObjectTracker.__append_object_position(
@@ -171,9 +210,6 @@ class ObjectTracker:
                 )
             else:
                 # if not add new entry
-                print("ID: ", closest_ring_id)
-                print("X dist: ", x_dist)
-                print("Y dist: ", y_dist)
                 ObjectTracker.__add_new_object(
                     object,
                     objectsToTrack,
@@ -187,6 +223,7 @@ class ObjectTracker:
 
     @staticmethod
     def __object_assignment_validation(
+        object: Ring | Necklace | Bracelet,
         object_list: list[JewelryObject],
         objectID: int,
         x_distance: float,
@@ -206,7 +243,7 @@ class ObjectTracker:
         # where particular object was not found
         X_axis_condition: bool = (
             x_distance <= (
-                Ring.X_AXIS_MOVEMENT_ERROR *
+                object.X_AXIS_MOVEMENT_ERROR *
                 thresholdMux
             )
         )
@@ -216,7 +253,7 @@ class ObjectTracker:
         # where particular object was not found
         Y_axis_condition: bool = (
             y_distance <= (
-                Ring.Y_AXIS_MOVEMENT_ERROR *
+                object.Y_AXIS_MOVEMENT_ERROR *
                 thresholdMux
             )
         )
@@ -255,7 +292,7 @@ class ObjectTracker:
 
     @staticmethod
     def __get_distance_table(
-        objectToTrack: list[Ring | Necklace | Bracelet],
+        objectsToTrack: list[Ring | Necklace | Bracelet],
         key_points: tuple[cv2.KeyPoint] = tuple()
     ) -> dict[int, tuple[float, float]]:
         '''
@@ -274,12 +311,12 @@ class ObjectTracker:
             distanceTableCurrentKeyPoint = {}
 
             # loop through object list
-            for object_id in range(0, len(objectToTrack)):
+            for object_id in range(0, len(objectsToTrack)):
 
                 # get distance between current object coordinates and key point in format
                 # (x_dist, y_dist)
                 distance = (
-                    objectToTrack[object_id]
+                    objectsToTrack[object_id]
                     .calculateDistance(key_points[KP_id])
                 )
 
@@ -317,6 +354,7 @@ class ObjectTracker:
 
     @staticmethod
     def __increment_missing_on_frames(objectList:  list[Ring | Necklace | Bracelet]) -> None:
+
         for object in objectList:
             object.incrementMissingOnFrames()
 
