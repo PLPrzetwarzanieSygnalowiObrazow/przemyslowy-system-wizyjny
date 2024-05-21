@@ -1,7 +1,7 @@
 import cv2
-from dataclasses import dataclass, field
-from typing import Final
 import numpy
+from typing import Final
+from dataclasses import dataclass, field
 
 
 @dataclass

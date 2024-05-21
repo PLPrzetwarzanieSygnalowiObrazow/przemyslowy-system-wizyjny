@@ -1,8 +1,9 @@
-from dataclasses import dataclass, field
 import cv2
 import numpy
-from dependencies.objectsDefinition import Ring, Necklace, Earings
+from dataclasses import dataclass, field
 from dependencies.draw import Draw
+from dependencies.objectsDefinition import Ring, Necklace, Earings
+
 X = 0
 Y = 1
 

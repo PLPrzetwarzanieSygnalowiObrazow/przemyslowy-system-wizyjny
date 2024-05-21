@@ -1,18 +1,11 @@
-from skimage import filters, feature, segmentation, morphology, color
-from skimage.measure import regionprops, label
-from skimage.color import rgb2gray
-from scipy.ndimage import binary_fill_holes
-import matplotlib.pyplot as plt
 import numpy
 import cv2
-import time
 from dependencies.video import Video
 from dependencies.filter import Filter
-
-from dependencies.draw import Draw
 from dependencies.segmentation import Segmentation
-from dependencies.blobDetectorInit import *
+from dependencies.draw import Draw
 from dependencies.objectTracker import ObjectTracker
+from dependencies.blobDetectorInit import RINGS_DETECTOR, EARINGS_DETECTOR, NECKLACES_DETECTOR
 
 
 VIDEO_FILE_PATH = "./assets/nagranie_v4_cut.mp4"
