@@ -1,17 +1,16 @@
 import numpy
 import cv2
+import argparse
+from dependencies.descriptions import *
 from dependencies.video import Video
 from dependencies.filter import Filter
 from dependencies.segmentation import Segmentation
 from dependencies.draw import Draw
-from dependencies.objectTracker import ObjectTracker
 from dependencies.blobDetectorInit import RINGS_DETECTOR, EARINGS_DETECTOR, NECKLACES_DETECTOR
-
+from dependencies.objectTracker import ObjectTracker
 
 VIDEO_FILE_PATH = "./assets/nagranie_v4_cut.mp4"
-video = Video(path=VIDEO_FILE_PATH, frame_no=1000)
-
-tracker = ObjectTracker()
+STARTING_FRAME_NO = 0
 
 
 def main():
@@ -108,8 +107,8 @@ def countObjects(
     '''
     # Rozpakowanie tuple przygotowanych key points odpowiadającym konkretnemu typowi obiektu
     rings_KP = detectedObjects[0]
-    necklaces_KP = detectedObjects[1]
-    earings_KP = detectedObjects[2]
+    earings_KP = detectedObjects[1]
+    necklaces_KP = detectedObjects[2]
 
     # Identyfikacja obiektów i zaznaczenie ich na ramce
     return tracker.trackObjects(
@@ -121,4 +120,26 @@ def countObjects(
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=PROGRAM_DESCRIPTION)
+    parser.add_argument(
+        "-p",
+        "--video_file_path",
+        default=VIDEO_FILE_PATH,
+        type=str,
+        help=VIDEO_FILE_PATH_HELPER
+    )
+    parser.add_argument(
+        "-f",
+        "--start_frame_number",
+        default=STARTING_FRAME_NO,
+        type=int,
+        help=START_FRAME_NUMBER_HELPER
+    )
+    args = parser.parse_args()
+    video = Video(
+        path=args.video_file_path,
+        frame_no=args.start_frame_number
+    )
+
+    tracker = ObjectTracker()
     main()

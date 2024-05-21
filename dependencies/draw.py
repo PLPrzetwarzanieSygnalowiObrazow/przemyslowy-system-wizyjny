@@ -6,8 +6,8 @@ from dataclasses import dataclass
 @dataclass
 class Draw:
 
-    COLOR_BLUE = (0, 255, 0)
-    COLOR_GREEN = (255, 0, 0)
+    COLOR_BLUE = (255, 0, 0)
+    COLOR_GREEN = (0, 255, 0)
     COLOR_RED = (0, 0, 255)
 
     RECTANGLE_THICKNESS = 5

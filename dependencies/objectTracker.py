@@ -111,7 +111,7 @@ class ObjectTracker:
         )
 
         # if object to track are earings group them into pairs before further processing
-        if object is Ring:
+        if object is Earings:
             key_points = Earings.groupEaringsIntoPairs(key_points)
 
         # get distance tables
