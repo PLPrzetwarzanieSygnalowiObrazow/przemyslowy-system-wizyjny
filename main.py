@@ -3,109 +3,128 @@ from skimage.measure import regionprops, label
 from skimage.color import rgb2gray
 from scipy.ndimage import binary_fill_holes
 import matplotlib.pyplot as plt
-import numpy as np
+import numpy
 import cv2
 import time
-import copy
-
 from dependencies.video import Video
 from dependencies.filter import Filter
-from dependencies.blobDetector import BlobDetector
+
 from dependencies.draw import Draw
 from dependencies.segmentation import Segmentation
+from dependencies.blobDetectorInit import *
+from dependencies.objectTracker import ObjectTracker
+
 
 VIDEO_FILE_PATH = "./assets/nagranie_v4_cut.mp4"
-EARINGS_DETECTOR = BlobDetector(
-    filter_by_color=True,
-    blob_color=0,
-    filter_by_area=True,
-    min_area=1200,
-    max_area=10900,
-    filter_by_circularity=True,
-    min_circularity=0.35,
-    max_circularity=0.80,
-    filter_by_convexity=False,
-    min_convexity=0.20,
-    max_convexity=0.90,
-    filter_by_inertia=True,
-    min_inertia_ratio=0.12,
-    max_inertia_ratio=0.90,
-)
-RINGS_DETECTOR = BlobDetector(
-    filter_by_color=True,
-    blob_color=0,
-    filter_by_area=True,
-    min_area=7000,
-    max_area=12000,
-    filter_by_circularity=True,
-    min_circularity=0.6,
-    max_circularity=1,
-    filter_by_convexity=True,
-    min_convexity=0.6,
-    max_convexity=1,
-    filter_by_inertia=True,
-    min_inertia_ratio=0.5,
-    max_inertia_ratio=1,
-)
-NECKLES_DETECTOR = BlobDetector(
-    filter_by_color=True,
-    blob_color=0,
-    filter_by_area=True,
-    min_area=100000,
-    max_area=10000000,
-    filter_by_circularity=True,
-    min_circularity=0.25,
-    max_circularity=0.9,
-    filter_by_convexity=False,
-    min_convexity=0.1,
-    max_convexity=1.0,
-    filter_by_inertia=False,
-    min_inertia_ratio=0.4,
-    max_inertia_ratio=1,
-)
+video = Video(path=VIDEO_FILE_PATH, frame_no=1000)
+
+tracker = ObjectTracker()
 
 
 def main():
-    video = Video(path=VIDEO_FILE_PATH, frame_no=550)
 
     while (org_frame := video.get_frame()) is not None:
-        # Zamiana klatki na odcienie szarości
-        gray_frame = cv2.cvtColor(org_frame, cv2.COLOR_BGR2GRAY)
 
-        # Rozmazanie klatki
-        gaussian_frame = Filter.gauss(gray_frame)
+        transformedFrames = transformFrame(org_frame)
 
-        # Wykrywanie krawędzi
-        canny_frame = Filter.canny(gaussian_frame)
+        detectedObjects = detectObjects(transformedFrames)
 
-        # Domknięcie krawędzi
-        closed_frame = Filter.closing(canny_frame, 2)
+        frame_to_display = countObjects(detectedObjects, org_frame)
 
-        # Znalezienie krawędzi
-        contours = Segmentation.findContours(closed_frame)
+        video.show_frame(frame_to_display)
 
-        # Wypełnienie znalezionych krawędzi
-        contours_filled = Draw.contourFill(gray_frame, contours)
+    tracker.printTrackingReport()
 
-        # Zamknięcie krawędzi (tylko do pierścionków)
-        closed_frame = Filter.closing(canny_frame, 4)
+    return None
 
-        # Znalezienie pierścionków
-        rings_key_points = RINGS_DETECTOR.detect_objects(closed_frame)
 
-        # Znalezienie kolczyków
-        earings_key_points = EARINGS_DETECTOR.detect_objects(contours_filled)
+def transformFrame(
+    frame: numpy.ndarray
+) -> tuple[
+    numpy.ndarray,
+    numpy.ndarray
+]:
+    '''
+        Returns 2 frames in tuple.
+        First one is dedicated for detecting the rings,
+        the second one for necklaces and earings
+    '''
+    # Zamiana klatki na odcienie szarości
+    gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-        # Znalezienie naszyjników
-        neckles_key_points = NECKLES_DETECTOR.detect_objects(contours_filled)
+    # Rozmazanie klatki
+    gaussian_frame = Filter.gauss(gray_frame)
 
-        # Połączenie obrazu głównego z punktami
-        # Wyszukiwanie pierścieni działa najlepiej
-        result = Draw.keyPoints(org_frame, rings_key_points, Draw.COLOR_RED)
-        result = Draw.keyPoints(result, earings_key_points, Draw.COLOR_GREEN)
-        result = Draw.keyPoints(result, neckles_key_points, Draw.COLOR_BLUE)
+    # Wykrywanie krawędzi
+    canny_frame = Filter.canny(gaussian_frame)
 
-        video.show_frame(result)
+    # Domknięcie krawędzi
+    rings_frame = Filter.closing(canny_frame, 2)
+
+    # Znalezienie krawędzi
+    contours = Segmentation.findContours(rings_frame)
+
+    # Wypełnienie znalezionych krawędzi
+    ear_neck_frame = Draw.contourFill(gray_frame, contours)
+
+    return (rings_frame, ear_neck_frame)
+
+
+def detectObjects(
+    framesForDetection: tuple[
+        numpy.ndarray,
+        numpy.ndarray
+    ]
+) -> tuple[
+    tuple[cv2.KeyPoint],
+    tuple[cv2.KeyPoint],
+    tuple[cv2.KeyPoint]
+]:
+    '''
+        Returns 3 tuples of key points for different types of objects:
+            - rings,
+            - earings,
+            - necklaces.
+    '''
+    # Rozpakowanie tuple przygotowanych ramek
+    rings_frame = framesForDetection[0]
+    ear_neck_frame = framesForDetection[1]
+
+    # Znalezienie pierścionków
+    rings_KP = RINGS_DETECTOR.detect_objects(rings_frame)
+
+    # Znalezienie kolczyków
+    earings_KP = EARINGS_DETECTOR.detect_objects(ear_neck_frame)
+
+    # Znalezienie naszyjników
+    necklaces_KP = NECKLACES_DETECTOR.detect_objects(ear_neck_frame)
+
+    return (rings_KP, earings_KP, necklaces_KP)
+
+
+def countObjects(
+    detectedObjects: tuple[
+        tuple[cv2.KeyPoint],
+        tuple[cv2.KeyPoint],
+        tuple[cv2.KeyPoint]
+    ],
+    frame_to_mark_objects: numpy.ndarray
+) -> numpy.ndarray:
+    '''
+        Returns frame passed in, with marked objects which were found
+    '''
+    # Rozpakowanie tuple przygotowanych key points odpowiadającym konkretnemu typowi obiektu
+    rings_KP = detectedObjects[0]
+    necklaces_KP = detectedObjects[1]
+    earings_KP = detectedObjects[2]
+
+    # Identyfikacja obiektów i zaznaczenie ich na ramce
+    return tracker.trackObjects(
+        rings_key_points=rings_KP,
+        necklaces_key_points=necklaces_KP,
+        earings_key_points=earings_KP,
+        frame_to_draw=frame_to_mark_objects
+    )
 
 
 if __name__ == "__main__":
