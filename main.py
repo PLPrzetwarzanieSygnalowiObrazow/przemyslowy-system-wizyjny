@@ -57,7 +57,8 @@ def main():
 
         tracker.trackObjects(
             rings_key_points=rings_KP,
-            necklaces_key_points=necklaces_KP
+            necklaces_key_points=necklaces_KP,
+            earings_key_points=earings_KP
         )
 
         result = Draw.keyPoints(org_frame, rings_KP, Draw.COLOR_RED)
@@ -69,6 +70,7 @@ def main():
     tracker.clean_up_phantom_objects()
     print("Found rings: ", len(tracker.rings))
     print("Found necklaces: ", len(tracker.necklaces))
+    print("Found earings: ", len(tracker.earings))
 
 
 if __name__ == "__main__":

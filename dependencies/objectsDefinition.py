@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 import cv2
+import math
 
 X = 0
 Y = 1
@@ -156,9 +157,67 @@ class Necklace (JewelryObject):
 
 @dataclass
 class Earings (JewelryObject):
-    OBJECT_NAME: str = "Bransoletka"
+    OBJECT_NAME: str = "Kolczyki"
 
-    X_AXIS_MOVEMENT_PER_FRAME: int = 4
-    Y_AXIS_MOVEMENT_PER_FRAME: int = 1
+    X_AXIS_MOVEMENT_PER_FRAME: int = 0
+    Y_AXIS_MOVEMENT_PER_FRAME: int = 0
+
+    X_AXIS_MOVEMENT_ERROR: int = 50
+    Y_AXIS_MOVEMENT_ERROR: int = 50
+
+    DISTANCE_BETWEEN_EARINGS: int = 100
 
     MARK_AS_INVISIBLE_AFTER_X_COORDINATE: int = 1_000
+    MARK_AS_INVISIBLE_AFTER_MISSING_ON_FRAMES: int = 40
+
+    @staticmethod
+    def groupEaringsIntoPairs(keyPoints: tuple[cv2.KeyPoint]) -> tuple[cv2.KeyPoint]:
+
+        output: set[cv2.KeyPoint] = set()
+        distances: list[tuple[float, cv2.KeyPoint, cv2.KeyPoint]] = []
+        paired_KPs: set[int] = set()
+        for i in range(0, len(keyPoints)):
+
+            for j in range(0, len(keyPoints)):
+                if i == j:
+                    continue
+                distances.append(
+                    (
+                        Earings.__get_objects_distance(
+                            keyPoints[i],
+                            keyPoints[j]
+                        ),
+                        i,
+                        j
+                    )
+                )
+
+        distances.sort()
+
+        for dist, i, j in distances:
+            if i not in paired_KPs and j not in paired_KPs and dist < Earings.DISTANCE_BETWEEN_EARINGS:
+                paired_KPs.add(i)
+                paired_KPs.add(j)
+                output.add(
+                    Earings.__merge_key_points(
+                        keyPoints[i],
+                        keyPoints[j]
+                    )
+                )
+
+        return tuple(output)
+
+    @staticmethod
+    def __merge_key_points(kp1: cv2.KeyPoint, kp2: cv2.KeyPoint) -> cv2.KeyPoint:
+        return cv2.KeyPoint(
+            (kp1.pt[X] + kp2.pt[X]) / 2,
+            (kp1.pt[Y] + kp2.pt[Y]) / 2,
+            (kp1.size + kp2.size) / 2
+        )
+
+    @staticmethod
+    def __get_objects_distance(KP_1: cv2.KeyPoint, KP_2: cv2.KeyPoint) -> float:
+        return math.sqrt(
+            (KP_1.pt[X] - KP_2.pt[X]) ** 2 +
+            (KP_1.pt[Y] - KP_2.pt[Y]) ** 2
+        )

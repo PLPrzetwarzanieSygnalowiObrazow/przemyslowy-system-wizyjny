@@ -15,9 +15,6 @@ class ObjectTracker:
 
     __analyzed_frames: int = field(init=False, default=0)
 
-    def __count_analyzed_frames(self):
-        self.__analyzed_frames = self.__analyzed_frames + 1
-
     def trackObjects(
             self,
             rings_key_points: tuple[cv2.KeyPoint] = tuple(),
@@ -42,11 +39,18 @@ class ObjectTracker:
             rings_key_points
         )
 
-        # track necklace
+        # track necklaces
         self.__track_objects_of_given_type(
             Necklace,
             self.necklaces,
             necklaces_key_points
+        )
+        grouped_earings_KP = Earings.groupEaringsIntoPairs(earings_key_points)
+        # track earings
+        self.__track_objects_of_given_type(
+            Earings,
+            self.earings,
+            grouped_earings_KP
         )
 
         return None
@@ -60,6 +64,9 @@ class ObjectTracker:
             if ring.getFoundOnFrames() < 10:
                 # print("Found on frames: ", ring.getFoundOnFrames())
                 self.rings.remove(ring)
+
+    def __count_analyzed_frames(self):
+        self.__analyzed_frames = self.__analyzed_frames + 1
 
     @staticmethod
     def __track_objects_of_given_type(
