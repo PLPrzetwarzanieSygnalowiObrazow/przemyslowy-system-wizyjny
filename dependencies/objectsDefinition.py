@@ -140,6 +140,7 @@ class Ring (JewelryObject):
     Y_AXIS_MOVEMENT_ERROR: int = 10
 
     MARK_AS_INVISIBLE_AFTER_X_COORDINATE: int = 1_000
+    MARK_AS_INVISIBLE_AFTER_MISSING_ON_FRAMES: int = 10
 
 
 @dataclass
@@ -153,6 +154,7 @@ class Necklace (JewelryObject):
     Y_AXIS_MOVEMENT_ERROR: int = 38
 
     MARK_AS_INVISIBLE_AFTER_X_COORDINATE: int = 800
+    MARK_AS_INVISIBLE_AFTER_MISSING_ON_FRAMES: int = 10
 
 
 @dataclass

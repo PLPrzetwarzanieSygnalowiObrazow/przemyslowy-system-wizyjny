@@ -60,10 +60,17 @@ class ObjectTracker:
             Method to remove wrongly identified objects found due to any artifacts on the frame.
         '''
         print("Analyzed frames: ", self.__analyzed_frames)
-        for ring in self.rings:
-            if ring.getFoundOnFrames() < 10:
-                # print("Found on frames: ", ring.getFoundOnFrames())
-                self.rings.remove(ring)
+
+        objectTypesToCleanup: dict[Ring | Necklace | Earings, list[Ring | Necklace | Earings]] = {
+            Ring: self.rings,
+            Necklace: self.necklaces,
+            Earings: self.earings
+        }
+
+        for object_type in objectTypesToCleanup:
+            for object in objectTypesToCleanup[object_type]:
+                if object.getFoundOnFrames() < object_type.MARK_AS_INVISIBLE_AFTER_MISSING_ON_FRAMES:
+                    objectTypesToCleanup[object_type].remove(object)
 
     def __count_analyzed_frames(self):
         self.__analyzed_frames = self.__analyzed_frames + 1
