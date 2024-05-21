@@ -72,7 +72,10 @@ class Video:
 
         # Attempt/retry to get a frame. There is a chance that it might failed previous time
         # so we try RETRY_LIMIT_GET_FRAME times to read the frame.
-        while (retry_counter := retry_counter + 1) <= self.RETRY_LIMIT_GET_FRAME and (exited := self.pause(delay_counter=retry_counter)) is False:
+        while (
+            ((retry_counter := retry_counter + 1) <= self.RETRY_LIMIT_GET_FRAME) and
+            ((exited := self.pause(delay_counter=retry_counter)) is False)
+        ):
             self.frame_flag, self.current_frame = self.capture.read()
             if self.frame_flag:
                 self.frame_no = self.capture.get(cv2.CAP_PROP_POS_FRAMES)
