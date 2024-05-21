@@ -15,6 +15,8 @@ class Video:
     RETRY_LIMIT_GET_FRAME: Final[int] = 3
     RETRY_LIMIT_OPEN: Final[int] = 3
 
+    EXIT_KEY: int = 27
+
     path: str = field(default=None)
     width: int = field(default=1280)
     height: int = field(default=720)
@@ -60,25 +62,29 @@ class Video:
             raise Exception("Could not open video file")
 
     def pause(self, delay_counter: int = 1) -> None:
-        cv2.waitKey(pow(self.DELAY_BETWEEN_FRAMES, delay_counter))
+        return (cv2.waitKey(pow(self.DELAY_BETWEEN_FRAMES, delay_counter)) == Video.EXIT_KEY)
 
     def get_frame(self) -> numpy.ndarray:
 
         # Init retry counter
-        retry_counter = 0
+        retry_counter: int = 0
+        # exited: bool = False
 
         # Attempt/retry to get a frame. There is a chance that it might failed previous time
         # so we try RETRY_LIMIT_GET_FRAME times to read the frame.
-        while (retry_counter := retry_counter + 1) <= self.RETRY_LIMIT_GET_FRAME:
+        while (retry_counter := retry_counter + 1) <= self.RETRY_LIMIT_GET_FRAME and (exited := self.pause(delay_counter=retry_counter)) is False:
             self.frame_flag, self.current_frame = self.capture.read()
             if self.frame_flag:
                 self.frame_no = self.capture.get(cv2.CAP_PROP_POS_FRAMES)
                 break
-            self.pause(delay_counter=retry_counter)
 
         # Execute if loop was not exited by break
         else:
-            print(self.MSG_VIDEO_ENDED)
+            match exited:
+                case True:
+                    print("Program exited")
+                case False:
+                    print(self.MSG_VIDEO_ENDED)
             return None
 
         self.current_frame = cv2.resize(
