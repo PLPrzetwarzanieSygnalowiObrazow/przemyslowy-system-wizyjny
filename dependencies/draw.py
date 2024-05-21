@@ -1,8 +1,6 @@
 import cv2
 import numpy
-from skimage import filters, feature, segmentation, morphology, color, measure
-from dataclasses import dataclass, field
-from typing import Final
+from dataclasses import dataclass
 
 
 @dataclass

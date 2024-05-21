@@ -1,8 +1,6 @@
 import cv2
 import numpy
-from skimage import filters, feature, segmentation, morphology, color, measure
 from dataclasses import dataclass, field
-from typing import Final
 
 
 @dataclass
@@ -45,7 +43,8 @@ class BlobDetector:
         self.detector_params.minInertiaRatio = self.min_inertia_ratio
         self.detector_params.maxInertiaRatio = self.max_inertia_ratio
 
-        self.blob_detector = cv2.SimpleBlobDetector_create(self.detector_params)
+        self.blob_detector = cv2.SimpleBlobDetector_create(
+            self.detector_params)
 
     def detect_objects(self, frame: numpy.ndarray) -> tuple:
         return self.blob_detector.detect(frame)
