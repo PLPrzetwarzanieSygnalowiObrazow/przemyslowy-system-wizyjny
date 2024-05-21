@@ -1,7 +1,8 @@
 from dataclasses import dataclass, field
 import cv2
+import numpy
 from dependencies.objectsDefinition import Ring, Necklace, Earings
-
+from dependencies.draw import Draw
 X = 0
 Y = 1
 
@@ -9,6 +10,11 @@ Y = 1
 @dataclass
 class ObjectTracker:
 
+    COLOR_ASSIGNMENT_TO_OBJECT_TYPES = {
+        Necklace: Draw.COLOR_BLUE,
+        Ring: Draw.COLOR_RED,
+        Earings: Draw.COLOR_GREEN
+    }
     necklaces: list[Necklace] = field(init=False, default_factory=list)
     rings: list[Ring] = field(init=False, default_factory=list)
     earings: list[Earings] = field(init=False, default_factory=list)
@@ -19,8 +25,9 @@ class ObjectTracker:
             self,
             rings_key_points: tuple[cv2.KeyPoint] = tuple(),
             necklaces_key_points: tuple[cv2.KeyPoint] = tuple(),
-            earings_key_points: tuple[cv2.KeyPoint] = tuple()
-    ) -> None:
+            earings_key_points: tuple[cv2.KeyPoint] = tuple(),
+            frame_to_draw: numpy.ndarray = None
+    ) -> numpy.ndarray:
         '''
             Public method to track objects in the video frame.
             Invokes tracking methods for know object types:
@@ -28,38 +35,47 @@ class ObjectTracker:
                 - necklaces
                 - earings
 
-            returns None
+            Returns a frame with selected objects.
         '''
         self.__count_analyzed_frames()
 
         # track rings
-        self.__track_objects_of_given_type(
+        frame_to_draw = self.__track_objects_of_given_type(
             Ring,
             self.rings,
-            rings_key_points
+            rings_key_points,
+            frame_to_draw
         )
 
         # track necklaces
-        self.__track_objects_of_given_type(
+        frame_to_draw = self.__track_objects_of_given_type(
             Necklace,
             self.necklaces,
-            necklaces_key_points
+            necklaces_key_points,
+            frame_to_draw
         )
-        grouped_earings_KP = Earings.groupEaringsIntoPairs(earings_key_points)
+
         # track earings
-        self.__track_objects_of_given_type(
+        frame_to_draw = self.__track_objects_of_given_type(
             Earings,
             self.earings,
-            grouped_earings_KP
+            earings_key_points,
+            frame_to_draw
         )
 
-        return None
+        return frame_to_draw
 
-    def clean_up_phantom_objects(self) -> None:
+    def printTrackingReport(self) -> None:
+        self.__clean_up_phantom_objects()
+        print("Analyzed frames: ", self.__analyzed_frames)
+        print("Found rings: ", len(self.rings))
+        print("Found necklaces: ", len(self.necklaces))
+        print("Found earings: ", len(self.earings))
+
+    def __clean_up_phantom_objects(self) -> None:
         '''
             Method to remove wrongly identified objects found due to any artifacts on the frame.
         '''
-        print("Analyzed frames: ", self.__analyzed_frames)
 
         objectTypesToCleanup: dict[Ring | Necklace | Earings, list[Ring | Necklace | Earings]] = {
             Ring: self.rings,
@@ -75,15 +91,28 @@ class ObjectTracker:
     def __count_analyzed_frames(self):
         self.__analyzed_frames = self.__analyzed_frames + 1
 
-    @staticmethod
+    @ staticmethod
     def __track_objects_of_given_type(
         object: Ring | Necklace | Earings,
         objectsToTrack: list[Ring | Necklace | Earings],
-        key_points: tuple[cv2.KeyPoint] = tuple()
+        key_points: tuple[cv2.KeyPoint] = tuple(),
+        frame_to_draw: numpy.ndarray = None
     ):
         '''
             Method to perform necessary operations to track rings
         '''
+
+        # mark objects on the frame
+        frame_to_return = Draw.keyPoints(
+            frame=frame_to_draw,
+            keyPoints=key_points,
+            color=ObjectTracker.COLOR_ASSIGNMENT_TO_OBJECT_TYPES[object]
+        )
+
+        # if object to track are earings group them into pairs before further processing
+        if object is Ring:
+            key_points = Earings.groupEaringsIntoPairs(key_points)
+
         # get distance tables
         distanceTable = ObjectTracker.__get_distance_table(
             objectsToTrack,
@@ -137,9 +166,9 @@ class ObjectTracker:
         # increment counter for each object which has not been found
         ObjectTracker.__increment_missing_on_frames(objectsToTrack)
 
-        return None
+        return frame_to_return
 
-    @staticmethod
+    @ staticmethod
     def __object_assignment_validation(
         object: Ring | Necklace | Earings,
         object_list: list[Ring | Necklace | Earings],
@@ -179,7 +208,7 @@ class ObjectTracker:
         # returns true if both conditions are met
         return (X_axis_condition and Y_axis_condition)
 
-    @staticmethod
+    @ staticmethod
     def __add_new_object(
         object: Ring | Necklace | Earings,
         listToAppend: list[Ring | Necklace | Earings],
@@ -194,7 +223,7 @@ class ObjectTracker:
 
         return None
 
-    @staticmethod
+    @ staticmethod
     def __append_object_position(
         listToAppend: list[Ring | Necklace | Earings],
         object_id: int,
@@ -208,7 +237,7 @@ class ObjectTracker:
 
         return None
 
-    @staticmethod
+    @ staticmethod
     def __get_distance_table(
         objectsToTrack: list[Ring | Necklace | Earings],
         key_points: tuple[cv2.KeyPoint] = tuple()
@@ -249,7 +278,7 @@ class ObjectTracker:
 
         return distanceTable
 
-    @staticmethod
+    @ staticmethod
     def __get_closest_position_match(distances: dict[int, tuple[float, float]]):
         '''
             Method to find closest distance in provided distance dict
@@ -266,7 +295,7 @@ class ObjectTracker:
 
         return (ring_id, x_dist, y_dist)
 
-    @staticmethod
+    @ staticmethod
     def __reset_append_flag(objectList:  list[Ring | Necklace | Earings]) -> None:
 
         for object in objectList:
@@ -274,7 +303,7 @@ class ObjectTracker:
 
         return None
 
-    @staticmethod
+    @ staticmethod
     def __increment_missing_on_frames(objectList:  list[Ring | Necklace | Earings]) -> None:
 
         for object in objectList:
