@@ -172,15 +172,25 @@ class Earings (JewelryObject):
 
     @staticmethod
     def groupEaringsIntoPairs(keyPoints: tuple[cv2.KeyPoint]) -> tuple[cv2.KeyPoint]:
+        '''
+            Method to group earings into pairs. Each earing is detected as separate object,
+            so before tracking we have to connect them into pairs.
+        '''
 
         output: set[cv2.KeyPoint] = set()
-        distances: list[tuple[float, cv2.KeyPoint, cv2.KeyPoint]] = []
+        distances: list[tuple[float, int, int]] = []
         paired_KPs: set[int] = set()
-        for i in range(0, len(keyPoints)):
 
+        # loop through key point each with each other
+        for i in range(0, len(keyPoints)):
             for j in range(0, len(keyPoints)):
+
+                # if the IDs are the same there is no sense to perform any calculation,
+                # as it is the same object
                 if i == j:
                     continue
+
+                # append distances list with the distance between currently analyzed objects and their IDs
                 distances.append(
                     (
                         Earings.__get_objects_distance(
@@ -192,23 +202,42 @@ class Earings (JewelryObject):
                     )
                 )
 
+        # sort distances list ascending (starting from shortest distance)
+        # each pair will be included twice i.e. (123, 4, 5) and (123, 5, 4)
         distances.sort()
 
+        # loop through sorted distances
         for dist, i, j in distances:
-            if i not in paired_KPs and j not in paired_KPs and dist < Earings.DISTANCE_BETWEEN_EARINGS:
+
+            # Check following conditions:
+            # - if i and j IDs are not already paired
+            # - if the calculated distance is not greater than set threshold
+            if (
+                (i not in paired_KPs) and
+                (j not in paired_KPs) and
+                (dist < Earings.DISTANCE_BETWEEN_EARINGS)
+            ):
+                # add i and j to set of used id,
+                # to avoid making a pair with another one, with longer distance
                 paired_KPs.add(i)
                 paired_KPs.add(j)
+
+                # create Key Point for a earings pair and add it to output set
                 output.add(
                     Earings.__merge_key_points(
                         keyPoints[i],
                         keyPoints[j]
                     )
                 )
-
+        # convert set to tuple and return
         return tuple(output)
 
     @staticmethod
     def __merge_key_points(kp1: cv2.KeyPoint, kp2: cv2.KeyPoint) -> cv2.KeyPoint:
+        '''
+            Method to merge identified earings pair (represented by separate key points),
+            to singular key point representing the pair, which will allow to unify other processing steps.
+        '''
         return cv2.KeyPoint(
             (kp1.pt[X] + kp2.pt[X]) / 2,
             (kp1.pt[Y] + kp2.pt[Y]) / 2,
@@ -217,6 +246,9 @@ class Earings (JewelryObject):
 
     @staticmethod
     def __get_objects_distance(KP_1: cv2.KeyPoint, KP_2: cv2.KeyPoint) -> float:
+        '''
+            Method to calculate euclidean distance between two key points
+        '''
         return math.sqrt(
             (KP_1.pt[X] - KP_2.pt[X]) ** 2 +
             (KP_1.pt[Y] - KP_2.pt[Y]) ** 2
